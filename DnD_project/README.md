@@ -9,13 +9,6 @@ DEPENDENCIES
 All files must be in the same directory
  - all .cpp .h and .txt
 ------------------------
-SUBMISSION INFORMATION
-------------------------
-CSCI1300 spring 2023 Project 3
-Author: Michael Chapp, Vishnu Duriseti
-Recitation: 202 – Lin Shi (Michael)
-Date: April 30, 2023
-------------------------
 ABOUT THIS PROJECT
 ------------------------
 This project is developing an application that allows users to play a texted bases DND style RPG game.
