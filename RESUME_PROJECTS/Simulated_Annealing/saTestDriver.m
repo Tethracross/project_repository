@@ -1,0 +1,252 @@
+%% Author: Vishnu Duriseti
+%{
+    The test lab for the simulated annealing algo 
+    1) includes the SimAnneal algo and the main driver that runs it
+        - will eventually convert into another function that we can test
+        with just a function call
+
+
+pseudocode:
+    1) acceptance probability function P(e, eNew, Temp) that chooses
+    whether to move from arbitrary currentState(s) to nextState (s*)
+        - depends on energy functions E(s) = e & E(sNew) = eNew
+            -> smaller e is preffered (higher probability weight)
+        ** P(e, eNew, Temp) > 0 even if eNew < e (so that algo doesn't get stuck in local mins)
+        P {} T (as Temp approaches 0, so should Probability)
+        - when Temp = 0, algo degrades into the GREEDY ALGORITHM (moving only downhill)
+            -> ex. P(e, eNew, Temp) = 1 if eNew < e
+
+    - The P function is usually chosen so that the probability of accepting
+    a move decreases when the difference (eNew - e) increases, small uphill 
+    moves are more likely than large ones.
+
+    ** for a large T, evolution of s looks for bigger energy variations 
+       while for smaller T, evolution looks for finer/smaller variations
+
+
+    2) Input parameters: (
+        state space                       S(), 
+        energy function->                 E(), 
+        next candidate generator->        neighbor(), 
+        acceptance probability function-> P(), 
+        annealing schedule->              temp(),
+        and initial temp->                init_temp 
+        )
+
+    ** In practice, it's common to use the same acceptance function P() 
+       for many problems and adjust the other two functions according to 
+       the specific problem.
+%}
+
+clc; close all; clear;
+
+%% Defining State Space and other key variabls
+% defining the parameter structure
+% s.x;
+
+% the Ackley Function --> global min at f(0) = 0
+% E = @(s) -20*exp(-0.2*sqrt(0.5.*((s.^2)))) - exp(0.5*(cos(2*pi.*s))) + exp(1) + 20; 
+
+E = @(x) -20*exp(-0.2*sqrt(0.5.*((x.^2)))) - exp(0.5*(cos(2*pi.*x))) + exp(1) + 20; 
+
+% Defining arbitrary initial starting point s and energy E
+numDimentions = nargin(E);
+sInit = 10*rand(1, numDimentions);
+eInit = E(sInit(1));
+eMatrix = [eInit];
+
+s = sInit;
+
+% Initialize starting Temperature and min Temperature
+temp = 80^nargin(E); initTemp = temp;
+minTemp = 1e-02;
+tempMatrix = [temp];
+
+% defining a annealing schedule
+alpha = .99; % cooling rate (alpha > 1)
+T = @(temp) temp * alpha;
+% beta = 0.5;
+% T = @(temp) initTemp/(1+beta*temp)^2;
+
+% count variable for input matrix
+count = 0;
+
+sMatrix = [sInit];
+
+%% Main loop
+while temp > minTemp
+    count=count+1;
+    [sNext] = neighbor(s);
+    
+    % if E(s) - E(sNext) < 1e-05
+    %     break;
+    % end    
+
+    acceptance = P(E(s(1)), E(sNext(1)), temp);
+    if acceptance
+        % accepting the next step
+        s = sNext;
+    end
+    temp = T(temp)
+
+    sMatrix = [sMatrix; s];
+    tempMatrix = [tempMatrix; temp];
+    eMatrix = [eMatrix; E(s(1))];
+end
+
+disp(['Calculated Minimum is w = ' num2str(E(s(1)))])
+
+t = linspace(0,count,count+1);
+
+
+%% plotting SA point with ackley function
+% figure;
+% plot(t, sMatrix)
+% title('Input traversal per reiteration of loop')
+% xlabel('Iteration Number')
+% ylabel('Input to Energy Function')
+% grid minor;
+% 
+x = linspace(-40,40,count+1);
+% y = linspace(-40,40,count+1);
+% z = linspace(-40,40,count+1);
+w = E(x);
+
+figure; hold on
+subplot(3,1,1)
+title('Simmulated Annealing Solution Traversal')
+plot(t, sMatrix(:,1))
+legend('traversal of SA', 'Location','best')
+grid on;
+
+subplot(3,1,2)
+plot(t, tempMatrix)
+legend('decay of temperature', 'Location','best')
+ylabel('x/y/z point')
+grid on;
+
+subplot(3,1,3)
+plot(t, eMatrix)
+legend('traversal of SA Solution', 'Location','best')
+grid on;
+
+% subplot(4,1,4)
+% plot(t, eMatrix)
+% legend('traversal of output temperature', 'Location','best')
+% xlabel('Traversal Step')
+% grid on;
+
+
+figure; hold on;
+plot(x, w)
+plot(s, E(s), '*')
+legend('Ackley Function', 'Simmulated Annealing Optimization Point', 'Location','north')
+grid minor;
+
+
+% Candidate Generator Procedure
+function sNext = neighbor(s) % s is a VECTOR describing current input state
+    a = -1; b = 1; % beginning and ending indext to random next step
+    sNext = zeros(size(s));
+
+    for i=1:length(s)
+        sNext(i) = s(i) + a+(b-a)*rand;
+    end
+end
+
+% Acceptance probability Function
+function acceptance = P(e, eNew, T)
+    % as defined by Kirkpatrick et al.
+    if eNew < e % always try to shoot for minimums
+        acceptance = true;
+    else % prob still > 0 as you still want the algo to spread search area to escape local minimums
+        r = rand;
+        prob = exp(-(eNew-e)/T); % smaller T --> smaller p | larger delta_e --> smaller p
+        
+        if r < prob
+            acceptance = true;
+        else
+            acceptance = false;
+        end        
+    end
+end
+
+
+
+
+
+
+
+
+% % Defining initial temperature
+% T0 = 1;
+% minT = 1e-04;
+% temp = 1;
+% 
+% % Annealing parameter
+% kmax = 10000;
+% 
+% % Defining arbitrary starting point s
+% numDimentions = nargin(S);
+% sInit = 10*rand(1, numDimentions);
+% 
+% 
+% % Defining S matrix for input states
+% s = sInit;
+% 
+% 
+% %% Running the algorithm
+% 
+% for k = 1:kmax
+%     sNew = neighbor(s);
+%     temp = T(temp, 0.99);
+%     e = E(s, numDimentions); eNew = E(sNew, numDimentions);
+%     if P(e, eNew, temp) >= rand
+%         s = sNew;
+%     else
+%         continue;
+%     end
+% end
+% 
+% 
+% 
+% %% Energy Function
+% function e = E(s, n) % s is a matrix of all the input parameters
+%     % ackley setup
+%     sum1 = 0;
+%     sum2 = 0;
+%     for i = 1:n
+%         sum1 = sum1 + s(i)^2;
+%         sum2 = sum2 + cos((pi/4)*s(i));
+%     end
+% 
+%     % ackley function
+%     e = -20*exp(-0.2*sqrt((1/n)*sum1)) - exp((1/n)*sum2) + 20 + exp(1);
+% end
+% 
+% %% Candidate Generator Procedure
+% function sNext = neighbor(s) % s is a VECTOR describing current input state
+%     a = -1; b = 1; % beginning and ending indext to random next step
+%     sNext = zeros(length(s));
+% 
+%     for i=1:length(s)
+%         sNext(i) = s(i) + a+(b-a)*rand;
+%     end
+% end
+% 
+% %% Acceptance probability Function
+% function probability = P(e, eNew, T)
+%     % as defined by Kirkpatrick et al.
+%     if eNew < e % always try to shoot for minimums
+%         probability = 1;
+%     else % prob still > 0 as you still want the algo to spread search area to escape local minimums
+%         probability = 1/(1+exp(-(eNew-e)/T)); % 0 < p < 0.5 | smaller T --> smaller p | larger delta_e --> smaller p
+%     end
+% end
+% 
+% 
+% %% Annealing Schedule 
+% function temp = T(t, alpha) % k denotes the annealing parameter
+%     % temp = T0*exp(1-(k+1)/kmax); % solution to 1st order ODE: dT/dt = -kT w/ initial conditions (0, T0)
+%     temp = t*alpha
+% end
