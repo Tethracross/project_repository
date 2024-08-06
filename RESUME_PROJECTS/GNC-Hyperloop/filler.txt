@@ -1,0 +1,6 @@
+Just filling in space for this folder to add my scripts in the near future
+
+should have folders:
+-->RIMU
+-->Hexapod_Controls
+-->UKF
